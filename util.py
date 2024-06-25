@@ -1,11 +1,14 @@
+import sys
+
 import matplotlib.pyplot as plt
 import geopandas as gpd
 import pandas as pd
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 import ast
+import codecs
 
-def init_df(file, max=16):
+def init_df(file, max=44):
     df = pd.read_csv(file, sep=",", nrows=max)
     if not "coords" in df.columns:
         prep_dist(df)
@@ -13,7 +16,9 @@ def init_df(file, max=16):
     else:
         df['coords'] = df['coords'].apply(ast.literal_eval)
     return df
-
+def berechne_distanz(coords1, coords2):
+    # Beispielhafte Distanzberechnung zwischen zwei Koordinaten
+    return ((coords1[0] - coords2[0])**2 + (coords1[1] - coords2[1])**2)**0.5
 
 def prep_dist(df):
     df['coords'] = df['city'].apply(coordinates)
@@ -66,7 +71,7 @@ def drawScatter(allGroups, loc, name):
         '#8B4513',  # SaddleBrown
         '#2E8B57',  # SeaGreen
     ]
-    gdf = gpd.read_file("/Users/user/ligascheduling/LigaScheduling/DEU_adm.zip")
+    gdf = gpd.read_file("DEU_adm.zip")
     teams = range(len(loc))
     if allGroups[0]:
         days = len(allGroups)
@@ -86,26 +91,25 @@ def drawScatter(allGroups, loc, name):
 
 def evaluate(allGroups, df):
     sum = 0
-    perteam = {city: 0 for city in df['city']}
+    perteam = {name: 0 for name in df['name']}
     out = ""
     for k in range(len(allGroups)):
         print(f"--day {k+1}--")
         out += f"--day {k+1}--\n"  
         for g in allGroups[k]:
-            host = df['city'][g[0]]
+            host = df['name'][g[0]]
             string = f"{host}: "
             for i in g[1:]:
-                guest = df['city'][i]
+                guest = df['name'][i]
                 string += f"{guest}, "
                 distance = df[str(i)][g[0]]
-                # print(f"distance {host} - {guest}: {distance}km")
+                #print(f"distance {host} - {guest}: {distance}km")
                 sum += distance
-                # print(f"sum is now {sum}")
+                #print(f"sum is now {sum}")
                 perteam[guest] += distance
-                # else:
-                #     sum += int(distance.distance([loc[g[0]], loc[i]]).km)
-            print(string[:-2])
-            out += string[:-2]+ "\n"
+
+            print(string[:-2].encode('utf-8').decode('utf-8'))
+            out += string[:-2].encode('utf-8').decode('utf-8')+ "\n"
     
     min_key = min(perteam, key=lambda k: perteam[k])
     max_key = max(perteam, key=lambda k: perteam[k])
@@ -121,4 +125,5 @@ def evaluate(allGroups, df):
     for key in sorted(perteam, key= lambda x : -perteam[x]):
         tab =  "\t\t" if len(key) < 7 else "\t"
         out += f"{key}:{tab}{perteam[key]} km\n"
+    print(out)
     return out
